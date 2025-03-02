@@ -72,6 +72,9 @@ class MockTelemetryService implements ITelemetryService {
 }
 
 class MockTokenStoreService implements ITreeSitterTokenizationStoreService {
+	delete(model: ITextModel): void {
+		throw new Error('Method not implemented.');
+	}
 	rangeHasTokens(model: ITextModel, range: Range, minimumTokenQuality: TokenQuality): boolean {
 		return true;
 	}
@@ -396,4 +399,20 @@ class y {
 		assert.deepStrictEqual(tokensContentSize(tokens), content.length);
 		modelService.destroyModel(model.uri);
 	});
+
+	test('Many nested scopes', async () => {
+		const content = `y = new x(ttt({
+	message: '{0} i\\n\\n [commandName]({1}).',
+	args: ['Test', \`command:\${openSettingsCommand}?\${encodeURIComponent('["SettingName"]')}\`],
+	// To make sure the translators don't break the link
+	comment: ["{Locked=']({'}"]
+}));`;
+		const model = await getModelAndPrepTree(content);
+		const tokens = treeSitterTokenizationSupport.getTokensInRange(model, new Range(1, 1, 6, 5), 0, 238);
+		verifyTokens(tokens);
+		assert.deepStrictEqual(tokens?.length, 56);
+		assert.deepStrictEqual(tokensContentSize(tokens), content.length);
+		modelService.destroyModel(model.uri);
+	});
+
 });
