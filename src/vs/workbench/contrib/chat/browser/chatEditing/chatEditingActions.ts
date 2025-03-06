@@ -28,12 +28,11 @@ import { GroupsOrder, IEditorGroupsService } from '../../../../services/editor/c
 import { IEditorService } from '../../../../services/editor/common/editorService.js';
 import { ChatAgentLocation } from '../../common/chatAgents.js';
 import { ChatContextKeys } from '../../common/chatContextKeys.js';
-import { applyingChatEditsFailedContextKey, CHAT_EDITING_MULTI_DIFF_SOURCE_RESOLVER_SCHEME, chatEditingAgentSupportsReadonlyReferencesContextKey, chatEditingResourceContextKey, chatEditingWidgetFileReadonlyContextKey, chatEditingWidgetFileStateContextKey, decidedChatEditingResourceContextKey, hasAppliedChatEditsContextKey, hasUndecidedChatEditingResourceContextKey, IChatEditingService, IChatEditingSession, WorkingSetEntryRemovalReason, WorkingSetEntryState } from '../../common/chatEditingService.js';
+import { applyingChatEditsFailedContextKey, CHAT_EDITING_MULTI_DIFF_SOURCE_RESOLVER_SCHEME, chatEditingResourceContextKey, chatEditingWidgetFileStateContextKey, decidedChatEditingResourceContextKey, hasAppliedChatEditsContextKey, hasUndecidedChatEditingResourceContextKey, IChatEditingService, IChatEditingSession, WorkingSetEntryRemovalReason, WorkingSetEntryState } from '../../common/chatEditingService.js';
 import { IChatService } from '../../common/chatService.js';
 import { isRequestVM, isResponseVM } from '../../common/chatViewModel.js';
 import { CHAT_CATEGORY } from '../actions/chatActions.js';
 import { ChatTreeItem, IChatWidget, IChatWidgetService } from '../chat.js';
-import { EditsAttachmentModel } from '../chatAttachmentModel.js';
 
 export interface IEditingSessionActionContext {
 	widget?: IChatWidget;
@@ -92,35 +91,6 @@ abstract class WorkingSetAction extends EditingSessionAction {
 	abstract runWorkingSetAction(accessor: ServicesAccessor, editingSession: IChatEditingSession, chatWidget: IChatWidget | undefined, ...uris: URI[]): any;
 }
 
-registerAction2(class MarkFileAsReadonly extends WorkingSetAction {
-	constructor() {
-		super({
-			id: 'chatEditing.markFileAsReadonly',
-			title: localize2('markFileAsReadonly', 'Mark as read-only'),
-			icon: Codicon.lock,
-			toggled: chatEditingWidgetFileReadonlyContextKey,
-			menu: [{
-				id: MenuId.ChatEditingWidgetModifiedFilesToolbar,
-				when: ContextKeyExpr.and(
-					chatEditingAgentSupportsReadonlyReferencesContextKey,
-					ContextKeyExpr.or(
-						ContextKeyExpr.equals(chatEditingWidgetFileReadonlyContextKey.key, true),
-						ContextKeyExpr.equals(chatEditingWidgetFileReadonlyContextKey.key, false),
-					)
-				),
-				order: 10,
-				group: 'navigation'
-			}],
-		});
-	}
-
-	async runWorkingSetAction(_accessor: ServicesAccessor, currentEditingSession: IChatEditingSession, _chatWidget: IChatWidget, ...uris: URI[]): Promise<void> {
-		for (const uri of uris) {
-			currentEditingSession.markIsReadonly(uri);
-		}
-	}
-});
-
 registerAction2(class AddFileToWorkingSet extends WorkingSetAction {
 	constructor() {
 		super({
@@ -129,7 +99,7 @@ registerAction2(class AddFileToWorkingSet extends WorkingSetAction {
 			icon: Codicon.plus,
 			menu: [{
 				id: MenuId.ChatEditingWidgetModifiedFilesToolbar,
-				when: ContextKeyExpr.or(ContextKeyExpr.equals(chatEditingWidgetFileStateContextKey.key, WorkingSetEntryState.Transient), ContextKeyExpr.equals(chatEditingWidgetFileStateContextKey.key, WorkingSetEntryState.Suggested)),
+				when: ContextKeyExpr.equals(chatEditingWidgetFileStateContextKey.key, WorkingSetEntryState.Suggested),
 				order: 0,
 				group: 'navigation'
 			}],
@@ -149,6 +119,7 @@ registerAction2(class RemoveFileFromWorkingSet extends WorkingSetAction {
 			id: 'chatEditing.removeFileFromWorkingSet',
 			title: localize2('removeFileFromWorkingSet', 'Remove File'),
 			icon: Codicon.close,
+			precondition: ChatContextKeys.requestInProgress.negate(),
 			menu: [{
 				id: MenuId.ChatEditingWidgetModifiedFilesToolbar,
 				// when: ContextKeyExpr.or(ContextKeyExpr.equals(chatEditingWidgetFileStateContextKey.key, WorkingSetEntryState.Attached), ContextKeyExpr.equals(chatEditingWidgetFileStateContextKey.key, WorkingSetEntryState.Suggested), ContextKeyExpr.equals(chatEditingWidgetFileStateContextKey.key, WorkingSetEntryState.Transient)),
@@ -233,6 +204,7 @@ registerAction2(class AcceptAction extends WorkingSetAction {
 			id: 'chatEditing.acceptFile',
 			title: localize2('accept.file', 'Keep'),
 			icon: Codicon.check,
+			precondition: ChatContextKeys.requestInProgress.negate(),
 			menu: [{
 				when: ContextKeyExpr.and(ContextKeyExpr.equals('resourceScheme', CHAT_EDITING_MULTI_DIFF_SOURCE_RESOLVER_SCHEME), ContextKeyExpr.notIn(chatEditingResourceContextKey.key, decidedChatEditingResourceContextKey.key)),
 				id: MenuId.MultiDiffEditorFileToolbar,
@@ -258,6 +230,7 @@ registerAction2(class DiscardAction extends WorkingSetAction {
 			id: 'chatEditing.discardFile',
 			title: localize2('discard.file', 'Undo'),
 			icon: Codicon.discard,
+			precondition: ChatContextKeys.requestInProgress.negate(),
 			menu: [{
 				when: ContextKeyExpr.and(ContextKeyExpr.equals('resourceScheme', CHAT_EDITING_MULTI_DIFF_SOURCE_RESOLVER_SCHEME), ContextKeyExpr.notIn(chatEditingResourceContextKey.key, decidedChatEditingResourceContextKey.key)),
 				id: MenuId.MultiDiffEditorFileToolbar,
@@ -391,8 +364,8 @@ export class ChatEditingRemoveAllFilesAction extends EditingSessionAction {
 		editingSession.remove(WorkingSetEntryRemovalReason.User, ...uris);
 
 		// Remove all file attachments
-		const fileAttachments = chatWidget.attachmentModel ? [...(chatWidget.attachmentModel as EditsAttachmentModel).excludedFileAttachments, ...(chatWidget.attachmentModel as EditsAttachmentModel).fileAttachments] : [];
-		const attachmentIdsToRemove = fileAttachments.map(attachment => (attachment.value as URI).toString());
+		const fileAttachments = chatWidget.attachmentModel ? chatWidget.attachmentModel.fileAttachments : [];
+		const attachmentIdsToRemove = fileAttachments.map(attachment => attachment.toString());
 		chatWidget.attachmentModel.delete(...attachmentIdsToRemove);
 	}
 }
@@ -573,11 +546,6 @@ registerAction2(class RemoveAction extends Action2 {
 			// Restore the snapshot to what it was before the request(s) that we deleted
 			const snapshotRequestId = chatRequests[itemIndex].id;
 			await session.restoreSnapshot(snapshotRequestId, undefined);
-
-			// Remove the request and all that come after it
-			for (const request of requestsToRemove) {
-				await chatService.removeRequest(item.sessionId, request.id);
-			}
 		}
 	}
 });
