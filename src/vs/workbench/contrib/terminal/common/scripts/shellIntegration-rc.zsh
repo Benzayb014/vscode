@@ -112,6 +112,9 @@ unset VSCODE_NONCE
 __vscode_shell_env_reporting="$VSCODE_SHELL_ENV_REPORTING"
 unset VSCODE_SHELL_ENV_REPORTING
 
+# Report this shell supports rich command detection
+builtin printf '\e]633;P;HasRichCommandDetection=True\a'
+
 __vsc_prompt_start() {
 	builtin printf '\e]633;A\a'
 }
@@ -203,7 +206,7 @@ __track_missing_env_vars() {
 
 __vsc_update_env() {
 	if [[ "$__vscode_shell_env_reporting" == "1" ]]; then
-		builtin printf '\e]633;EnvSingleStart;%s;\a' $__vsc_nonce
+		builtin printf '\e]633;EnvSingleStart;%s;%s;\a' 0 $__vsc_nonce
 		if [ $__vsc_use_aa -eq 1 ]; then
 			if [[ ${#vsc_aa_env[@]} -eq 0 ]]; then
 				# Associative array is empty, do not diff, just add
