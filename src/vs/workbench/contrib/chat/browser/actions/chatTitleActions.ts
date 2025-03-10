@@ -487,12 +487,12 @@ export function registerChatTitleActions() {
 				await chatService.adoptRequest(editingSession.chatSessionId, request);
 				this._collectWorkingSetAdditions(request, workingSetAdditions);
 			}
-			workingSetAdditions.forEach(uri => editingSession.addFileToWorkingSet(uri));
+			workingSetAdditions.forEach(uri => editsView.widget.attachmentModel.addFile(uri));
 
 			// make request
 			await chatService.sendRequest(editingSession.chatSessionId, '', {
 				agentId: editAgent.id,
-				acceptedConfirmationData: [{ _type: 'toEditTransfer', transferedTurnResults: sourceRequests.map(v => v.response?.result) }], // TODO@jrieken HACKY
+				acceptedConfirmationData: [{ _type: 'toEditTransfer', transferredTurnResults: sourceRequests.map(v => v.response?.result) }], // TODO@jrieken HACKY
 				confirmation: typeof this.desc.title === 'string' ? this.desc.title : this.desc.title.value
 			});
 		}

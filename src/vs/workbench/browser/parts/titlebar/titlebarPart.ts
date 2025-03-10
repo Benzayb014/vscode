@@ -8,7 +8,7 @@ import { localize, localize2 } from '../../../../nls.js';
 import { MultiWindowParts, Part } from '../../part.js';
 import { ITitleService } from '../../../services/title/browser/titleService.js';
 import { getWCOTitlebarAreaRect, getZoomFactor, isWCOEnabled } from '../../../../base/browser/browser.js';
-import { MenuBarVisibility, getTitleBarStyle, getMenuBarVisibility, hasCustomTitlebar, hasNativeTitlebar, DEFAULT_CUSTOM_TITLEBAR_HEIGHT } from '../../../../platform/window/common/window.js';
+import { MenuBarVisibility, getTitleBarStyle, getMenuBarVisibility, hasCustomTitlebar, hasNativeTitlebar, DEFAULT_CUSTOM_TITLEBAR_HEIGHT, getWindowControlsStyle, WindowControlsStyle } from '../../../../platform/window/common/window.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { StandardMouseEvent } from '../../../../base/browser/mouseEvent.js';
 import { IConfigurationService, IConfigurationChangeEvent } from '../../../../platform/configuration/common/configuration.js';
@@ -149,9 +149,7 @@ export class BrowserTitleService extends MultiWindowParts<BrowserTitlebarPart> i
 	//#region Auxiliary Titlebar Parts
 
 	createAuxiliaryTitlebarPart(container: HTMLElement, editorGroupsContainer: IEditorGroupsContainer): IAuxiliaryTitlebarPart {
-		const titlebarPartContainer = document.createElement('div');
-		titlebarPartContainer.classList.add('part', 'titlebar');
-		titlebarPartContainer.setAttribute('role', 'none');
+		const titlebarPartContainer = $('.part.titlebar', { role: 'none' });
 		titlebarPartContainer.style.position = 'relative';
 		container.insertBefore(titlebarPartContainer, container.firstChild); // ensure we are first element
 
@@ -249,6 +247,8 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	//#endregion
 
 	protected rootContainer!: HTMLElement;
+	protected windowControlsContainer: HTMLElement | undefined;
+
 	protected dragRegion: HTMLElement | undefined;
 	private title!: HTMLElement;
 
@@ -484,8 +484,10 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 				// for something, except for web where a custom menu being supported). not putting the
 				// container helps with allowing to move the window when clicking very close to the
 				// window control buttons.
+			} else if (getWindowControlsStyle(this.configurationService) === WindowControlsStyle.HIDDEN) {
+				// Linux/Windows: controls are explicitly disabled
 			} else {
-				const windowControlsContainer = append(primaryWindowControlsLocation === 'left' ? this.leftContent : this.rightContent, $('div.window-controls-container'));
+				this.windowControlsContainer = append(primaryWindowControlsLocation === 'left' ? this.leftContent : this.rightContent, $('div.window-controls-container'));
 				if (isWeb) {
 					// Web: its possible to have control overlays on both sides, for example on macOS
 					// with window controls on the left and PWA controls on the right.
@@ -493,7 +495,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 				}
 
 				if (isWCOEnabled()) {
-					windowControlsContainer.classList.add('wco-enabled');
+					this.windowControlsContainer.classList.add('wco-enabled');
 				}
 			}
 		}
@@ -636,15 +638,6 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 				}
 			}
 
-			// --- Activity Actions
-			if (this.activityActionsEnabled) {
-				if (isAccountsActionVisible(this.storageService)) {
-					actions.primary.push(ACCOUNTS_ACTIVITY_TILE_ACTION);
-				}
-
-				actions.primary.push(GLOBAL_ACTIVITY_TITLE_ACTION);
-			}
-
 			// --- Global Actions
 			const globalToolbarActions = this.globalToolbarMenu.getActions();
 			this.hasGlobalToolbarEntries = globalToolbarActions.length > 0;
@@ -653,13 +646,22 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 				actions
 			);
 
-			// --- Layout Actions (always at the end)
+			// --- Layout Actions
 			if (this.layoutToolbarMenu) {
 				fillInActionBarActions(
 					this.layoutToolbarMenu.getActions(),
 					actions,
 					() => !this.editorActionsEnabled // Layout Actions in overflow menu when editor actions enabled in title bar
 				);
+			}
+
+			// --- Activity Actions (always at the end)
+			if (this.activityActionsEnabled) {
+				if (isAccountsActionVisible(this.storageService)) {
+					actions.primary.push(ACCOUNTS_ACTIVITY_TILE_ACTION);
+				}
+
+				actions.primary.push(GLOBAL_ACTIVITY_TITLE_ACTION);
 			}
 
 			this.actionToolBar.setActions(prepareActions(actions.primary), prepareActions(actions.secondary));
