@@ -33,7 +33,7 @@ const _allApiProposals = {
 	},
 	chatParticipantPrivate: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.chatParticipantPrivate.d.ts',
-		version: 6
+		version: 8
 	},
 	chatProvider: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.chatProvider.d.ts',
@@ -61,6 +61,9 @@ const _allApiProposals = {
 	},
 	commentReactor: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.commentReactor.d.ts',
+	},
+	commentReplyAuthor: {
+		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.commentReplyAuthor.d.ts',
 	},
 	commentReveal: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.commentReveal.d.ts',
@@ -154,7 +157,7 @@ const _allApiProposals = {
 	},
 	defaultChatParticipant: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.defaultChatParticipant.d.ts',
-		version: 3
+		version: 4
 	},
 	diffCommand: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.diffCommand.d.ts',
@@ -228,12 +231,10 @@ const _allApiProposals = {
 	},
 	languageModelDataPart: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.languageModelDataPart.d.ts',
+		version: 1
 	},
 	languageModelSystem: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.languageModelSystem.d.ts',
-	},
-	languageModelToolsForAgent: {
-		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.languageModelToolsForAgent.d.ts',
 	},
 	languageStatusText: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.languageStatusText.d.ts',
@@ -375,9 +376,6 @@ const _allApiProposals = {
 	},
 	testRelatedCode: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.testRelatedCode.d.ts',
-	},
-	textDocumentEncoding: {
-		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.textDocumentEncoding.d.ts',
 	},
 	textEditorDiffInformation: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.textEditorDiffInformation.d.ts',
